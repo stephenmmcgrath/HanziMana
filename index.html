@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hanzi Mana</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        neon: '#FF2A2A',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #000;
+            color: #fff;
+            overflow-x: hidden;
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease;
+        }
+
+        .neon-text {
+            color: #FF2A2A;
+            text-shadow: 0 0 5px #FF2A2A, 0 0 15px #FF2A2A;
+        }
+
+        .neon-border {
+            border-color: #FF2A2A;
+            box-shadow: 0 0 5px #FF2A2A, inset 0 0 5px #FF2A2A;
+        }
+
+        .neon-button {
+            background-color: transparent;
+            border: 2px solid #FF2A2A;
+            color: #FF2A2A;
+            transition: all 0.2s ease;
+        }
+
+        .neon-button:hover, .neon-button:active {
+            background-color: #FF2A2A;
+            color: #000;
+            box-shadow: 0 0 15px #FF2A2A;
+        }
+
+        /* Screen flash animations */
+        @keyframes flashCorrect {
+            0% { background-color: rgba(0, 255, 0, 0.4); }
+            100% { background-color: #000; }
+        }
+        
+        @keyframes flashIncorrect {
+            0% { background-color: rgba(255, 0, 0, 0.4); }
+            100% { background-color: #000; }
+        }
+
+        .flash-green {
+            animation: flashCorrect 0.5s ease-out;
+        }
+
+        .flash-red {
+            animation: flashIncorrect 0.5s ease-out;
+        }
+
+        /* Hidden utility class */
+        .hidden-view {
+            display: none !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4" id="app-body">
+
+    <!-- MAIN MENU -->
+    <div id="view-menu" class="flex flex-col items-center w-full max-w-md text-center">
+        <h1 class="text-5xl md:text-6xl font-bold mb-2 neon-text tracking-wider">Hanzi Mana</h1>
+        <p class="text-gray-400 mb-12">Select Difficulty</p>
+
+        <div class="w-full flex flex-col gap-4">
+            <button onclick="app.startGame('Simple')" class="neon-button rounded-xl py-4 px-6 text-xl font-semibold w-full">
+                Simple
+            </button>
+            <button onclick="app.startGame('Intermediate')" class="neon-button rounded-xl py-4 px-6 text-xl font-semibold w-full">
+                Intermediate
+            </button>
+            <button onclick="app.startGame('Difficult')" class="neon-button rounded-xl py-4 px-6 text-xl font-semibold w-full">
+                Difficult
+            </button>
+        </div>
+        
+        <div class="mt-8 text-gray-500">
+            High Score: <span id="high-score-display" class="text-neon">0</span>
+        </div>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div id="view-game" class="hidden-view flex flex-col items-center w-full max-w-md h-full flex-grow py-8">
+        <div class="w-full flex justify-between items-center px-4 mb-8">
+            <div class="text-xl font-bold neon-text">★ <span id="current-score">0</span></div>
+            <button onclick="app.speakCurrent()" class="p-3 bg-gray-800 rounded-full hover:bg-gray-700 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="flex-grow flex flex-col items-center justify-center mb-8">
+            <div id="card-char" class="text-8xl md:text-9xl font-bold text-white mb-4">文</div>
+            <div id="card-pinyin" class="text-2xl text-gray-400 tracking-widest">wén</div>
+        </div>
+
+        <div id="options-container" class="w-full flex flex-col gap-3">
+            <!-- Options injected by JS -->
+        </div>
+    </div>
+
+    <!-- END SCREEN -->
+    <div id="view-end" class="hidden-view flex flex-col items-center w-full max-w-md text-center">
+        <h2 class="text-4xl font-bold mb-4 neon-text">Round Complete</h2>
+        <p class="text-2xl mb-8">Score: <span id="final-score" class="text-neon font-bold">0</span></p>
+        
+        <button onclick="app.showMenu()" class="neon-button rounded-xl py-4 px-8 text-xl font-semibold w-full">
+            Back to Menu
+        </button>
+    </div>
+
+    <script>
+        const GameData = {
+            Simple: [
+                { character: "一", pinyin: "yī", meaning: "One" },
+                { character: "二", pinyin: "èr", meaning: "Two" },
+                { character: "人", pinyin: "rén", meaning: "Person" },
+                { character: "水", pinyin: "shuǐ", meaning: "Water" },
+                { character: "火", pinyin: "huǒ", meaning: "Fire" }
+            ],
+            Intermediate: [
+                { character: "明", pinyin: "míng", meaning: "Bright" },
+                { character: "昨", pinyin: "zuó", meaning: "Yesterday" },
+                { character: "学", pinyin: "xué", meaning: "To study" },
+                { character: "飞", pinyin: "fēi", meaning: "To fly" },
+                { character: "狗", pinyin: "gǒu", meaning: "Dog" }
+            ],
+            Difficult: [
+                { character: "懂", pinyin: "dǒng", meaning: "To understand" },
+                { character: "影", pinyin: "yǐng", meaning: "Shadow" },
+                { character: "健", pinyin: "jiàn", meaning: "Healthy" },
+                { character: "舒", pinyin: "shū", meaning: "Comfortable" },
+                { character: "照", pinyin: "zhào", meaning: "To shine / Photo" }
+            ]
+        };
+
+        const app = {
+            state: {
+                deck: [],
+                currentIndex: 0,
+                score: 0,
+                difficulty: null,
+                isAnimating: false
+            },
+            audioCtx: null,
+
+            init() {
+                this.updateMenuStats();
+            },
+
+            getStorage(key, defaultValue) {
+                const item = localStorage.getItem(`hanzimana_${key}`);
+                return item ? JSON.parse(item) : defaultValue;
+            },
+
+            setStorage(key, value) {
+                localStorage.setItem(`hanzimana_${key}`, JSON.stringify(value));
+            },
+
+            updateMenuStats() {
+                const highScore = this.getStorage('highscore', 0);
+                document.getElementById('high-score-display').innerText = highScore;
+            },
+
+            markIncorrect(char) {
+                const incorrect = this.getStorage('incorrect', []);
+                if (!incorrect.includes(char)) {
+                    incorrect.push(char);
+                    this.setStorage('incorrect', incorrect);
+                }
+            },
+
+            markCorrect(char) {
+                let incorrect = this.getStorage('incorrect', []);
+                incorrect = incorrect.filter(c => c !== char);
+                this.setStorage('incorrect', incorrect);
+            },
+
+            initAudioContext() {
+                if (!this.audioCtx) {
+                    this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (this.audioCtx.state === 'suspended') {
+                    this.audioCtx.resume();
+                }
+            },
+
+            playTone(isCorrect) {
+                if (!this.audioCtx) return;
+                
+                const osc = this.audioCtx.createOscillator();
+                const gainNode = this.audioCtx.createGain();
+                
+                osc.connect(gainNode);
+                gainNode.connect(this.audioCtx.destination);
+                
+                if (isCorrect) {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, this.audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(1200, this.audioCtx.currentTime + 0.1);
+                    gainNode.gain.setValueAtTime(0.5, this.audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + 0.2);
+                    osc.start();
+                    osc.stop(this.audioCtx.currentTime + 0.2);
+                } else {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(300, this.audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(150, this.audioCtx.currentTime + 0.2);
+                    gainNode.gain.setValueAtTime(0.5, this.audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(this.audioCtx.currentTime + 0.3);
+                }
+            },
+
+            speakCurrent() {
+                if (!this.state.deck[this.state.currentIndex]) return;
+                const text = this.state.deck[this.state.currentIndex].character;
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'zh-CN';
+                window.speechSynthesis.speak(utterance);
+            },
+
+            startGame(difficulty) {
+                this.initAudioContext();
+                this.state.difficulty = difficulty;
+                this.state.score = 0;
+                this.state.currentIndex = 0;
+                
+                const allWords = GameData[difficulty];
+                const incorrectHistory = this.getStorage('incorrect', []);
+                
+                // Smart deck generation: favor historically incorrect words
+                let wrongPool = allWords.filter(w => incorrectHistory.includes(w.character));
+                let randomPool = allWords.filter(w => !incorrectHistory.includes(w.character));
+                
+                // Shuffle helpers
+                const shuffle = (arr) => arr.sort(() => 0.5 - Math.random());
+                wrongPool = shuffle(wrongPool);
+                randomPool = shuffle(randomPool);
+                
+                // Take up to 3 historically wrong, fill rest with random
+                const targetCards = 5; // Fixed at 5 for this demo to match the categories
+                const numWrong = Math.min(wrongPool.length, Math.floor(targetCards * 0.6));
+                const numRandom = targetCards - numWrong;
+                
+                let deck = wrongPool.slice(0, numWrong).concat(randomPool.slice(0, numRandom));
+                this.state.deck = shuffle(deck);
+
+                this.switchView('view-game');
+                this.renderCard();
+            },
+
+            renderCard() {
+                if (this.state.currentIndex >= this.state.deck.length) {
+                    this.endGame();
+                    return;
+                }
+
+                const card = this.state.deck[this.state.currentIndex];
+                const allWords = GameData[this.state.difficulty];
+                
+                document.getElementById('current-score').innerText = this.state.score;
+                document.getElementById('card-char').innerText = card.character;
+                document.getElementById('card-pinyin').innerText = card.pinyin;
+
+                // Generate options (1 correct, 3 wrong)
+                let wrongOptions = allWords
+                    .filter(w => w.meaning !== card.meaning)
+                    .sort(() => 0.5 - Math.random())
+                    .slice(0, 3)
+                    .map(w => w.meaning);
+                
+                let options = [...wrongOptions, card.meaning].sort(() => 0.5 - Math.random());
+                
+                const container = document.getElementById('options-container');
+                container.innerHTML = '';
+                
+                options.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = 'w-full py-4 px-6 text-lg rounded-xl border-2 border-gray-700 bg-gray-900 hover:border-neon hover:text-neon transition';
+                    btn.innerText = opt;
+                    btn.onclick = () => this.handleAnswer(opt, card);
+                    container.appendChild(btn);
+                });
+                
+                // Auto-speak on new card
+                this.speakCurrent();
+            },
+
+            handleAnswer(selectedMeaning, card) {
+                if (this.state.isAnimating) return; // Prevent double clicks
+                this.state.isAnimating = true;
+
+                const isCorrect = selectedMeaning === card.meaning;
+                const body = document.getElementById('app-body');
+                
+                // Remove animation classes if they exist so we can re-trigger them
+                body.classList.remove('flash-green', 'flash-red');
+                // Force DOM reflow
+                void body.offsetWidth;
+
+                if (isCorrect) {
+                    this.state.score++;
+                    this.playTone(true);
+                    this.markCorrect(card.character);
+                    body.classList.add('flash-green');
+                } else {
+                    this.playTone(false);
+                    this.markIncorrect(card.character);
+                    body.classList.add('flash-red');
+                }
+
+                // Wait for animation, then next card
+                setTimeout(() => {
+                    this.state.isAnimating = false;
+                    this.state.currentIndex++;
+                    this.renderCard();
+                }, 500);
+            },
+
+            endGame() {
+                const currentHigh = this.getStorage('highscore', 0);
+                if (this.state.score > currentHigh) {
+                    this.setStorage('highscore', this.state.score);
+                }
+                
+                document.getElementById('final-score').innerText = `${this.state.score} / ${this.state.deck.length}`;
+                this.switchView('view-end');
+            },
+
+            showMenu() {
+                this.updateMenuStats();
+                this.switchView('view-menu');
+            },
+
+            switchView(viewId) {
+                document.getElementById('view-menu').classList.add('hidden-view');
+                document.getElementById('view-game').classList.add('hidden-view');
+                document.getElementById('view-end').classList.add('hidden-view');
+                
+                document.getElementById(viewId).classList.remove('hidden-view');
+            }
+        };
+
+        // Initialize on load
+        window.onload = () => app.init();
+    </script>
+</body>
+</html>
