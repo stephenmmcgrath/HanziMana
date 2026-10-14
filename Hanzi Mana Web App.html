@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Hanzi Mana</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
@@ -13,6 +13,9 @@
                 extend: {
                     colors: {
                         neon: '#FF2A2A',
+                        dark: '#0a0a0a',
+                        darker: '#000000',
+                        panel: '#1a1a1a'
                     },
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
@@ -21,23 +24,25 @@
             }
         }
     </script>
+    
     <style>
         body {
             background-color: #000;
             color: #fff;
-            overflow-x: hidden;
+            overflow: hidden; /* Prevent scrolling for app-like feel */
             font-family: 'Inter', sans-serif;
+            touch-action: manipulation;
             transition: background-color 0.3s ease;
         }
 
         .neon-text {
             color: #FF2A2A;
-            text-shadow: 0 0 5px #FF2A2A, 0 0 15px #FF2A2A;
+            text-shadow: 0 0 5px #FF2A2A, 0 0 15px rgba(255, 42, 42, 0.5);
         }
 
         .neon-border {
-            border-color: #FF2A2A;
-            box-shadow: 0 0 5px #FF2A2A, inset 0 0 5px #FF2A2A;
+            border: 2px solid #FF2A2A;
+            box-shadow: 0 0 10px rgba(255, 42, 42, 0.3), inset 0 0 10px rgba(255, 42, 42, 0.2);
         }
 
         .neon-button {
@@ -45,162 +50,298 @@
             border: 2px solid #FF2A2A;
             color: #FF2A2A;
             transition: all 0.2s ease;
+            text-shadow: 0 0 4px rgba(255, 42, 42, 0.5);
+            box-shadow: 0 0 8px rgba(255, 42, 42, 0.2), inset 0 0 8px rgba(255, 42, 42, 0.1);
         }
 
         .neon-button:hover, .neon-button:active {
-            background-color: #FF2A2A;
-            color: #000;
-            box-shadow: 0 0 15px #FF2A2A;
+            background-color: rgba(255, 42, 42, 0.2);
+            box-shadow: 0 0 15px rgba(255, 42, 42, 0.6), inset 0 0 10px rgba(255, 42, 42, 0.4);
+        }
+
+        .neon-button:disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .correct-btn {
+            background-color: rgba(34, 197, 94, 0.3) !important;
+            border-color: #22c55e !important;
+            color: #22c55e !important;
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.4), inset 0 0 10px rgba(34, 197, 94, 0.2) !important;
+            text-shadow: none !important;
+        }
+
+        .slider-neon {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            outline: none;
+        }
+        
+        .slider-neon::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #FF2A2A;
+            cursor: pointer;
+            box-shadow: 0 0 10px #FF2A2A;
         }
 
         /* Screen flash animations */
         @keyframes flashCorrect {
-            0% { background-color: rgba(0, 255, 0, 0.4); }
+            0% { background-color: rgba(34, 197, 94, 0.3); }
             100% { background-color: #000; }
         }
         
         @keyframes flashIncorrect {
-            0% { background-color: rgba(255, 0, 0, 0.4); }
+            0% { background-color: rgba(255, 42, 42, 0.3); }
             100% { background-color: #000; }
         }
 
-        .flash-green {
-            animation: flashCorrect 0.5s ease-out;
-        }
+        .flash-green { animation: flashCorrect 0.5s ease-out; }
+        .flash-red { animation: flashIncorrect 1.5s ease-out; }
 
-        .flash-red {
-            animation: flashIncorrect 0.5s ease-out;
+        .view {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            align-items: center;
         }
-
-        /* Hidden utility class */
-        .hidden-view {
-            display: none !important;
+        .view.active { display: flex; }
+        
+        /* Layout constraint */
+        #app-container {
+            max-width: 500px;
+            margin: 0 auto;
+            height: 100vh;
+            height: 100dvh;
+            position: relative;
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4" id="app-body">
-
-    <!-- MAIN MENU -->
-    <div id="view-menu" class="flex flex-col items-center w-full max-w-md text-center">
-        <h1 class="text-5xl md:text-6xl font-bold mb-2 neon-text tracking-wider">Hanzi Mana</h1>
-        <p class="text-gray-400 mb-12">Select Difficulty</p>
-
-        <div class="w-full flex flex-col gap-4">
-            <button onclick="app.startGame('Simple')" class="neon-button rounded-xl py-4 px-6 text-xl font-semibold w-full">
-                Simple
-            </button>
-            <button onclick="app.startGame('Intermediate')" class="neon-button rounded-xl py-4 px-6 text-xl font-semibold w-full">
-                Intermediate
-            </button>
-            <button onclick="app.startGame('Difficult')" class="neon-button rounded-xl py-4 px-6 text-xl font-semibold w-full">
-                Difficult
-            </button>
-        </div>
+<body id="app-body">
+    <div id="app-container" class="w-full flex flex-col p-4 relative">
         
-        <div class="mt-8 text-gray-500">
-            High Score: <span id="high-score-display" class="text-neon">0</span>
-        </div>
-    </div>
+        <!-- MAIN MENU -->
+        <div id="view-menu" class="view active justify-center">
+            <h1 class="text-5xl md:text-6xl font-bold mb-2 neon-text tracking-widest uppercase">Hanzi<br>Mana</h1>
+            <p class="text-gray-400 mb-12 text-sm uppercase tracking-widest">Flashcard Mastery</p>
 
-    <!-- GAME SCREEN -->
-    <div id="view-game" class="hidden-view flex flex-col items-center w-full max-w-md h-full flex-grow py-8">
-        <div class="w-full flex justify-between items-center px-4 mb-8">
-            <div class="text-xl font-bold neon-text">★ <span id="current-score">0</span></div>
-            <button onclick="app.speakCurrent()" class="p-3 bg-gray-800 rounded-full hover:bg-gray-700 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                </svg>
+            <div class="w-full flex flex-col gap-4 px-4">
+                <button onclick="app.startGame('simple')" class="neon-button rounded-xl py-4 px-6 text-xl font-semibold w-full uppercase tracking-wider">
+                    Simple
+                </button>
+                <button onclick="app.startGame('intermediate')" class="neon-button rounded-xl py-4 px-6 text-xl font-semibold w-full uppercase tracking-wider">
+                    Intermediate
+                </button>
+                <button onclick="app.startGame('difficult')" class="neon-button rounded-xl py-4 px-6 text-xl font-semibold w-full uppercase tracking-wider">
+                    Difficult
+                </button>
+                <button onclick="app.switchView('view-settings')" class="mt-8 text-gray-500 hover:text-neon transition flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Settings
+                </button>
+            </div>
+        </div>
+
+        <!-- SETTINGS MENU -->
+        <div id="view-settings" class="view py-8 px-4 justify-start">
+            <h2 class="text-3xl font-bold mb-8 neon-text uppercase tracking-wider">Settings</h2>
+            
+            <div class="w-full bg-panel rounded-2xl p-6 flex flex-col gap-8 neon-border">
+                
+                <!-- Cards Per Round -->
+                <div>
+                    <div class="flex justify-between mb-2">
+                        <label class="text-gray-300 font-semibold">Cards per round</label>
+                        <span id="lbl-cards" class="text-neon font-bold">20</span>
+                    </div>
+                    <input type="range" id="set-cards" min="5" max="50" step="1" value="20" class="slider-neon" oninput="app.updateSettings()">
+                </div>
+
+                <!-- Smart Ratio -->
+                <div>
+                    <div class="flex justify-between mb-2">
+                        <label class="text-gray-300 font-semibold">Smart Ratio (Focus Wrong)</label>
+                        <span id="lbl-ratio" class="text-neon font-bold">50%</span>
+                    </div>
+                    <p class="text-xs text-gray-500 mb-2">Percentage of previously incorrect cards to include in new rounds.</p>
+                    <input type="range" id="set-ratio" min="0" max="1" step="0.1" value="0.5" class="slider-neon" oninput="app.updateSettings()">
+                </div>
+
+                <!-- Volume -->
+                <div>
+                    <div class="flex justify-between mb-2">
+                        <label class="text-gray-300 font-semibold">Volume</label>
+                        <span id="lbl-vol" class="text-neon font-bold">80%</span>
+                    </div>
+                    <input type="range" id="set-vol" min="0" max="1" step="0.1" value="0.8" class="slider-neon" oninput="app.updateSettings()">
+                </div>
+
+                <!-- Sound Enabled Toggle -->
+                <div class="flex items-center justify-between">
+                    <label class="text-gray-300 font-semibold">Sound Enabled</label>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="set-sound" class="sr-only peer" onchange="app.updateSettings()" checked>
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neon"></div>
+                    </label>
+                </div>
+                
+                <!-- Reset Progress -->
+                <button onclick="app.resetProgress()" class="mt-4 border border-red-900 text-red-500 rounded py-2 hover:bg-red-900 hover:text-white transition text-sm">
+                    Reset Learning Progress
+                </button>
+            </div>
+
+            <button onclick="app.switchView('view-menu')" class="mt-auto neon-button rounded-xl py-4 px-8 text-xl font-semibold w-full uppercase tracking-wider">
+                Back to Menu
             </button>
         </div>
 
-        <div class="flex-grow flex flex-col items-center justify-center mb-8">
-            <div id="card-char" class="text-8xl md:text-9xl font-bold text-white mb-4">文</div>
-            <div id="card-pinyin" class="text-2xl text-gray-400 tracking-widest">wén</div>
+        <!-- GAME SCREEN -->
+        <div id="view-game" class="view py-4 justify-between">
+            <!-- Header -->
+            <div class="w-full flex justify-between items-center px-2">
+                <div class="text-xl font-bold text-gray-300">★ <span id="current-score" class="text-neon">0</span><span class="text-sm text-gray-600"> / <span id="total-cards">0</span></span></div>
+                <button onclick="app.speakCurrent()" id="btn-speak" class="p-3 bg-panel border border-gray-700 rounded-full hover:border-neon transition text-neon focus:outline-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Card Display -->
+            <div class="flex-grow flex flex-col items-center justify-center text-center px-4 w-full">
+                <div id="card-char" class="text-[7rem] leading-none font-bold text-white mb-2" style="text-shadow: 0 0 20px rgba(255,255,255,0.2);">文</div>
+                <div id="card-pinyin" class="text-3xl text-gray-400 tracking-widest font-semibold">wén</div>
+            </div>
+
+            <!-- Options -->
+            <div id="options-container" class="w-full flex flex-col gap-3 pb-4 px-2">
+                <!-- Buttons injected via JS -->
+            </div>
         </div>
 
-        <div id="options-container" class="w-full flex flex-col gap-3">
-            <!-- Options injected by JS -->
+        <!-- GAME OVER SCREEN -->
+        <div id="view-gameover" class="view justify-center px-4">
+            <h2 class="text-5xl font-bold mb-4 neon-text uppercase tracking-widest text-center">Round<br>Complete</h2>
+            
+            <div class="bg-panel w-full rounded-2xl p-8 my-8 flex flex-col items-center neon-border">
+                <p class="text-gray-400 mb-2 uppercase tracking-wider">Final Score</p>
+                <p class="text-5xl font-bold text-white"><span id="final-score" class="text-neon">0</span> <span class="text-2xl text-gray-500">/ <span id="final-total">0</span></span></p>
+            </div>
+            
+            <button onclick="app.switchView('view-menu')" class="neon-button rounded-xl py-4 px-8 text-xl font-semibold w-full uppercase tracking-wider">
+                Done
+            </button>
         </div>
-    </div>
-
-    <!-- END SCREEN -->
-    <div id="view-end" class="hidden-view flex flex-col items-center w-full max-w-md text-center">
-        <h2 class="text-4xl font-bold mb-4 neon-text">Round Complete</h2>
-        <p class="text-2xl mb-8">Score: <span id="final-score" class="text-neon font-bold">0</span></p>
-        
-        <button onclick="app.showMenu()" class="neon-button rounded-xl py-4 px-8 text-xl font-semibold w-full">
-            Back to Menu
-        </button>
     </div>
 
     <script>
-        const GameData = {
-            Simple: [
-                { character: "一", pinyin: "yī", meaning: "One" },
-                { character: "二", pinyin: "èr", meaning: "Two" },
-                { character: "人", pinyin: "rén", meaning: "Person" },
-                { character: "水", pinyin: "shuǐ", meaning: "Water" },
-                { character: "火", pinyin: "huǒ", meaning: "Fire" }
-            ],
-            Intermediate: [
-                { character: "明", pinyin: "míng", meaning: "Bright" },
-                { character: "昨", pinyin: "zuó", meaning: "Yesterday" },
-                { character: "学", pinyin: "xué", meaning: "To study" },
-                { character: "飞", pinyin: "fēi", meaning: "To fly" },
-                { character: "狗", pinyin: "gǒu", meaning: "Dog" }
-            ],
-            Difficult: [
-                { character: "懂", pinyin: "dǒng", meaning: "To understand" },
-                { character: "影", pinyin: "yǐng", meaning: "Shadow" },
-                { character: "健", pinyin: "jiàn", meaning: "Healthy" },
-                { character: "舒", pinyin: "shū", meaning: "Comfortable" },
-                { character: "照", pinyin: "zhào", meaning: "To shine / Photo" }
-            ]
+        const simpleWords = [{c:"一",p:"yī",m:"One"},{c:"二",p:"èr",m:"Two"},{c:"三",p:"sān",m:"Three"},{c:"四",p:"sì",m:"Four"},{c:"五",p:"wǔ",m:"Five"},{c:"六",p:"liù",m:"Six"},{c:"七",p:"qī",m:"Seven"},{c:"八",p:"bā",m:"Eight"},{c:"九",p:"jiǔ",m:"Nine"},{c:"十",p:"shí",m:"Ten"},{c:"人",p:"rén",m:"Person"},{c:"水",p:"shuǐ",m:"Water"},{c:"火",p:"huǒ",m:"Fire"},{c:"日",p:"rì",m:"Sun / Day"},{c:"月",p:"yuè",m:"Moon / Month"},{c:"木",p:"mù",m:"Wood"},{c:"山",p:"shān",m:"Mountain"},{c:"石",p:"shí",m:"Stone"},{c:"田",p:"tián",m:"Field"},{c:"土",p:"tǔ",m:"Earth"},{c:"大",p:"dà",m:"Big"},{c:"小",p:"xiǎo",m:"Small"},{c:"上",p:"shàng",m:"Up"},{c:"下",p:"xià",m:"Down"},{c:"左",p:"zuǒ",m:"Left"},{c:"右",p:"yòu",m:"Right"},{c:"中",p:"zhōng",m:"Middle"},{c:"口",p:"kǒu",m:"Mouth"},{c:"手",p:"shǒu",m:"Hand"},{c:"目",p:"mù",m:"Eye"},{c:"耳",p:"ěr",m:"Ear"},{c:"心",p:"xīn",m:"Heart"},{c:"门",p:"mén",m:"Door"},{c:"女",p:"nǚ",m:"Woman"},{c:"男",p:"nán",m:"Man"},{c:"子",p:"zǐ",m:"Child"},{c:"我",p:"wǒ",m:"I / Me"},{c:"你",p:"nǐ",m:"You"},{c:"他",p:"tā",m:"He"},{c:"她",p:"tā",m:"She"},{c:"好",p:"hǎo",m:"Good"},{c:"坏",p:"huài",m:"Bad"},{c:"多",p:"duō",m:"Many"},{c:"少",p:"shǎo",m:"Few"},{c:"天",p:"tiān",m:"Sky / Day"},{c:"地",p:"dì",m:"Ground"},{c:"云",p:"yún",m:"Cloud"},{c:"雨",p:"yǔ",m:"Rain"},{c:"风",p:"fēng",m:"Wind"},{c:"雪",p:"xuě",m:"Snow"}];
+        const intermediateWords = [{c:"明",p:"míng",m:"Bright"},{c:"昨",p:"zuó",m:"Yesterday"},{c:"学",p:"xué",m:"To study"},{c:"飞",p:"fēi",m:"To fly"},{c:"狗",p:"gǒu",m:"Dog"},{c:"走",p:"zǒu",m:"To walk"},{c:"跑",p:"pǎo",m:"To run"},{c:"吃",p:"chī",m:"To eat"},{c:"喝",p:"hē",m:"To drink"},{c:"睡",p:"shuì",m:"To sleep"},{c:"看",p:"kàn",m:"To look"},{c:"听",p:"tīng",m:"To listen"},{c:"说",p:"shuō",m:"To say"},{c:"读",p:"dú",m:"To read"},{c:"写",p:"xiě",m:"To write"},{c:"买",p:"mǎi",m:"To buy"},{c:"卖",p:"mài",m:"To sell"},{c:"开",p:"kāi",m:"To open"},{c:"关",p:"guān",m:"To close"},{c:"坐",p:"zuò",m:"To sit"},{c:"站",p:"zhàn",m:"To stand"},{c:"唱",p:"chàng",m:"To sing"},{c:"跳",p:"tiào",m:"To jump"},{c:"笑",p:"xiào",m:"To laugh"},{c:"哭",p:"kū",m:"To cry"},{c:"爱",p:"ài",m:"To love"},{c:"恨",p:"hèn",m:"To hate"},{c:"想",p:"xiǎng",m:"To think"},{c:"做",p:"zuò",m:"To do / make"},{c:"去",p:"qù",m:"To go"},{c:"来",p:"lái",m:"To come"},{c:"家",p:"jiā",m:"Home / Family"},{c:"车",p:"chē",m:"Car"},{c:"书",p:"shū",m:"Book"},{c:"猫",p:"māo",m:"Cat"},{c:"鸟",p:"niǎo",m:"Bird"},{c:"鱼",p:"yú",m:"Fish"},{c:"树",p:"shù",m:"Tree"},{c:"花",p:"huā",m:"Flower"},{c:"草",p:"cǎo",m:"Grass"},{c:"茶",p:"chá",m:"Tea"},{c:"衣",p:"yī",m:"Clothes"},{c:"鞋",p:"xié",m:"Shoes"},{c:"钱",p:"qián",m:"Money"},{c:"窗",p:"chuāng",m:"Window"},{c:"床",p:"chuáng",m:"Bed"},{c:"桌",p:"zhuō",m:"Table"},{c:"椅",p:"yǐ",m:"Chair"},{c:"灯",p:"dēng",m:"Lamp"},{c:"笔",p:"bǐ",m:"Pen"}];
+        const difficultWords = [{c:"懂",p:"dǒng",m:"To understand"},{c:"影",p:"yǐng",m:"Shadow"},{c:"健",p:"jiàn",m:"Healthy"},{c:"舒",p:"shū",m:"Comfortable"},{c:"照",p:"zhào",m:"To shine / Photo"},{c:"繁",p:"fán",m:"Complicated"},{c:"赢",p:"yíng",m:"To win"},{c:"藏",p:"cáng",m:"To hide"},{c:"赞",p:"zàn",m:"To praise"},{c:"释",p:"shì",m:"To explain"},{c:"验",p:"yàn",m:"To examine / Experience"},{c:"境",p:"jìng",m:"Border / Environment"},{c:"责",p:"zé",m:"Duty / Responsibility"},{c:"展",p:"zhǎn",m:"To unfold / Exhibit"},{c:"护",p:"hù",m:"To protect"},{c:"续",p:"xù",m:"To continue"},{c:"态",p:"tài",m:"Form / Attitude"},{c:"压",p:"yā",m:"To press / Pressure"},{c:"标",p:"biāo",m:"Mark / Standard"},{c:"质",p:"zhì",m:"Quality / Nature"},{c:"严",p:"yán",m:"Strict"},{c:"功",p:"gōng",m:"Merit / Achievement"},{c:"织",p:"zhī",m:"To weave / Organize"},{c:"系",p:"xì",m:"System / Connect"},{c:"社",p:"shè",m:"Society"},{c:"科",p:"kē",m:"Branch / Science"},{c:"技",p:"jì",m:"Skill / Technology"},{c:"政",p:"zhèng",m:"Politics"},{c:"济",p:"jì",m:"Aid / Economy"},{c:"际",p:"jì",m:"Border / Inter-"},{c:"统",p:"tǒng",m:"Command / System"},{c:"历",p:"lì",m:"Experience / Calendar"},{c:"未",p:"wèi",m:"Not yet / Future"},{c:"艺",p:"yì",m:"Skill / Art"},{c:"哲",p:"zhé",m:"Wise / Philosophy"},{c:"虑",p:"lǜ",m:"To consider"},{c:"察",p:"chá",m:"To observe"},{c:"判",p:"pàn",m:"To judge"},{c:"创",p:"chuàng",m:"To create"},{c:"异",p:"yì",m:"Different"},{c:"择",p:"zé",m:"To choose"},{c:"激",p:"jī",m:"To excite / Stimulate"},{c:"励",p:"lì",m:"To encourage"},{c:"盾",p:"dùn",m:"Shield"},{c:"暂",p:"zàn",m:"Temporary"},{c:"遇",p:"yù",m:"To meet"},{c:"避",p:"bì",m:"To avoid"},{c:"缺",p:"quē",m:"To lack"},{c:"极",p:"jí",m:"Extreme"},{c:"疑",p:"yí",m:"To doubt"}];
+
+        const allData = {
+            simple: simpleWords,
+            intermediate: intermediateWords,
+            difficult: difficultWords
         };
 
         const app = {
             state: {
                 deck: [],
+                difficulty: null,
                 currentIndex: 0,
                 score: 0,
-                difficulty: null,
-                isAnimating: false
+                isAnimating: false,
+                currentOptions: []
             },
+            
+            settings: {
+                cardsPerRound: 20,
+                smartRatio: 0.5,
+                soundEnabled: true,
+                volume: 0.8,
+                incorrectWords: []
+            },
+
             audioCtx: null,
 
             init() {
-                this.updateMenuStats();
+                this.loadSettings();
+                this.updateSettingsUI();
             },
 
-            getStorage(key, defaultValue) {
-                const item = localStorage.getItem(`hanzimana_${key}`);
-                return item ? JSON.parse(item) : defaultValue;
-            },
-
-            setStorage(key, value) {
-                localStorage.setItem(`hanzimana_${key}`, JSON.stringify(value));
-            },
-
-            updateMenuStats() {
-                const highScore = this.getStorage('highscore', 0);
-                document.getElementById('high-score-display').innerText = highScore;
-            },
-
-            markIncorrect(char) {
-                const incorrect = this.getStorage('incorrect', []);
-                if (!incorrect.includes(char)) {
-                    incorrect.push(char);
-                    this.setStorage('incorrect', incorrect);
+            loadSettings() {
+                try {
+                    const saved = localStorage.getItem('hanziManaSettings');
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        this.settings = { ...this.settings, ...parsed };
+                        // Ensure array type for incorrectWords
+                        if (!Array.isArray(this.settings.incorrectWords)) {
+                            this.settings.incorrectWords = [];
+                        }
+                    }
+                } catch(e) {
+                    console.error("Could not load settings", e);
                 }
             },
 
-            markCorrect(char) {
-                let incorrect = this.getStorage('incorrect', []);
-                incorrect = incorrect.filter(c => c !== char);
-                this.setStorage('incorrect', incorrect);
+            saveSettings() {
+                localStorage.setItem('hanziManaSettings', JSON.stringify(this.settings));
             },
 
-            initAudioContext() {
+            updateSettings() {
+                this.settings.cardsPerRound = parseInt(document.getElementById('set-cards').value);
+                this.settings.smartRatio = parseFloat(document.getElementById('set-ratio').value);
+                this.settings.volume = parseFloat(document.getElementById('set-vol').value);
+                this.settings.soundEnabled = document.getElementById('set-sound').checked;
+                
+                this.saveSettings();
+                this.updateSettingsUI();
+            },
+
+            updateSettingsUI() {
+                document.getElementById('set-cards').value = this.settings.cardsPerRound;
+                document.getElementById('lbl-cards').innerText = this.settings.cardsPerRound;
+                
+                document.getElementById('set-ratio').value = this.settings.smartRatio;
+                document.getElementById('lbl-ratio').innerText = Math.round(this.settings.smartRatio * 100) + '%';
+                
+                document.getElementById('set-vol').value = this.settings.volume;
+                document.getElementById('lbl-vol').innerText = Math.round(this.settings.volume * 100) + '%';
+                
+                document.getElementById('set-sound').checked = this.settings.soundEnabled;
+            },
+
+            resetProgress() {
+                this.settings.incorrectWords = [];
+                this.saveSettings();
+                // Brief visual feedback
+                const btn = event.target;
+                const originalText = btn.innerText;
+                btn.innerText = "Progress Reset!";
+                setTimeout(() => { btn.innerText = originalText; }, 2000);
+            },
+
+            switchView(viewId) {
+                document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+                document.getElementById(viewId).classList.add('active');
+            },
+
+            initAudio() {
+                if (!this.settings.soundEnabled) return;
                 if (!this.audioCtx) {
                     this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 }
@@ -210,7 +351,7 @@
             },
 
             playTone(isCorrect) {
-                if (!this.audioCtx) return;
+                if (!this.settings.soundEnabled || !this.audioCtx) return;
                 
                 const osc = this.audioCtx.createOscillator();
                 const gainNode = this.audioCtx.createGain();
@@ -218,19 +359,23 @@
                 osc.connect(gainNode);
                 gainNode.connect(this.audioCtx.destination);
                 
+                const vol = this.settings.volume * 0.5; // Scale down slightly to prevent clipping
+                
                 if (isCorrect) {
+                    // High pitched encouraging beep
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(600, this.audioCtx.currentTime);
                     osc.frequency.exponentialRampToValueAtTime(1200, this.audioCtx.currentTime + 0.1);
-                    gainNode.gain.setValueAtTime(0.5, this.audioCtx.currentTime);
+                    gainNode.gain.setValueAtTime(vol, this.audioCtx.currentTime);
                     gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + 0.2);
                     osc.start();
                     osc.stop(this.audioCtx.currentTime + 0.2);
                 } else {
+                    // Low pitched error thud
                     osc.type = 'sawtooth';
                     osc.frequency.setValueAtTime(300, this.audioCtx.currentTime);
                     osc.frequency.exponentialRampToValueAtTime(150, this.audioCtx.currentTime + 0.2);
-                    gainNode.gain.setValueAtTime(0.5, this.audioCtx.currentTime);
+                    gainNode.gain.setValueAtTime(vol, this.audioCtx.currentTime);
                     gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + 0.3);
                     osc.start();
                     osc.stop(this.audioCtx.currentTime + 0.3);
@@ -238,39 +383,46 @@
             },
 
             speakCurrent() {
-                if (!this.state.deck[this.state.currentIndex]) return;
-                const text = this.state.deck[this.state.currentIndex].character;
+                if (!this.settings.soundEnabled) return;
+                if (this.state.currentIndex >= this.state.deck.length) return;
+                
+                const text = this.state.deck[this.state.currentIndex].c;
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = 'zh-CN';
+                utterance.volume = this.settings.volume;
                 window.speechSynthesis.speak(utterance);
             },
 
             startGame(difficulty) {
-                this.initAudioContext();
+                this.initAudio(); // Resume context on user gesture
                 this.state.difficulty = difficulty;
                 this.state.score = 0;
                 this.state.currentIndex = 0;
+                this.state.isAnimating = false;
                 
-                const allWords = GameData[difficulty];
-                const incorrectHistory = this.getStorage('incorrect', []);
+                const wordPool = allData[difficulty];
                 
-                // Smart deck generation: favor historically incorrect words
-                let wrongPool = allWords.filter(w => incorrectHistory.includes(w.character));
-                let randomPool = allWords.filter(w => !incorrectHistory.includes(w.character));
+                // 1. Separate words into wrong history and unknown/correct
+                let wrongPool = wordPool.filter(w => this.settings.incorrectWords.includes(w.c));
+                let randomPool = wordPool.filter(w => !this.settings.incorrectWords.includes(w.c));
                 
-                // Shuffle helpers
-                const shuffle = (arr) => arr.sort(() => 0.5 - Math.random());
+                // 2. Shuffle pools
+                const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
                 wrongPool = shuffle(wrongPool);
                 randomPool = shuffle(randomPool);
                 
-                // Take up to 3 historically wrong, fill rest with random
-                const targetCards = 5; // Fixed at 5 for this demo to match the categories
-                const numWrong = Math.min(wrongPool.length, Math.floor(targetCards * 0.6));
-                const numRandom = targetCards - numWrong;
+                // 3. Determine target counts based on settings
+                const maxCards = Math.min(this.settings.cardsPerRound, wordPool.length);
+                let targetWrong = Math.floor(maxCards * this.settings.smartRatio);
                 
-                let deck = wrongPool.slice(0, numWrong).concat(randomPool.slice(0, numRandom));
-                this.state.deck = shuffle(deck);
-
+                // Bound by actual available wrong words
+                targetWrong = Math.min(targetWrong, wrongPool.length);
+                const targetRandom = maxCards - targetWrong;
+                
+                // 4. Combine and shuffle final deck
+                this.state.deck = shuffle([...wrongPool.slice(0, targetWrong), ...randomPool.slice(0, targetRandom)]);
+                
+                document.getElementById('total-cards').innerText = this.state.deck.length;
                 this.switchView('view-game');
                 this.renderCard();
             },
@@ -282,93 +434,109 @@
                 }
 
                 const card = this.state.deck[this.state.currentIndex];
-                const allWords = GameData[this.state.difficulty];
+                const fullPool = allData[this.state.difficulty];
                 
+                // Update header
                 document.getElementById('current-score').innerText = this.state.score;
-                document.getElementById('card-char').innerText = card.character;
-                document.getElementById('card-pinyin').innerText = card.pinyin;
+                
+                // Update Card UI
+                document.getElementById('card-char').innerText = card.c;
+                document.getElementById('card-pinyin').innerText = card.p;
 
-                // Generate options (1 correct, 3 wrong)
-                let wrongOptions = allWords
-                    .filter(w => w.meaning !== card.meaning)
+                // Generate Options
+                let wrongOptions = fullPool
+                    .filter(w => w.m !== card.m)
                     .sort(() => 0.5 - Math.random())
-                    .slice(0, 3)
-                    .map(w => w.meaning);
+                    .slice(0, 3);
                 
-                let options = [...wrongOptions, card.meaning].sort(() => 0.5 - Math.random());
+                this.state.currentOptions = [...wrongOptions, card].sort(() => 0.5 - Math.random());
                 
+                // Render Buttons
                 const container = document.getElementById('options-container');
                 container.innerHTML = '';
                 
-                options.forEach(opt => {
+                this.state.currentOptions.forEach(opt => {
                     const btn = document.createElement('button');
-                    btn.className = 'w-full py-4 px-6 text-lg rounded-xl border-2 border-gray-700 bg-gray-900 hover:border-neon hover:text-neon transition';
-                    btn.innerText = opt;
-                    btn.onclick = () => this.handleAnswer(opt, card);
+                    btn.className = 'w-full py-4 px-4 text-lg rounded-xl border border-gray-700 bg-panel text-white hover:border-neon hover:text-neon transition active:bg-gray-800 focus:outline-none';
+                    btn.innerText = opt.m;
+                    btn.dataset.meaning = opt.m;
+                    btn.onclick = () => this.handleAnswer(btn, opt.m, card.m, card.c);
                     container.appendChild(btn);
                 });
-                
-                // Auto-speak on new card
-                this.speakCurrent();
             },
 
-            handleAnswer(selectedMeaning, card) {
-                if (this.state.isAnimating) return; // Prevent double clicks
+            handleAnswer(clickedBtn, selectedMeaning, correctMeaning, char) {
+                if (this.state.isAnimating) return;
                 this.state.isAnimating = true;
 
-                const isCorrect = selectedMeaning === card.meaning;
+                const isCorrect = selectedMeaning === correctMeaning;
                 const body = document.getElementById('app-body');
                 
-                // Remove animation classes if they exist so we can re-trigger them
+                // Reset flashes
                 body.classList.remove('flash-green', 'flash-red');
-                // Force DOM reflow
-                void body.offsetWidth;
+                void body.offsetWidth; // Force reflow
+
+                // Disable all buttons to prevent double click
+                const allBtns = document.getElementById('options-container').querySelectorAll('button');
+                allBtns.forEach(b => b.disabled = true);
 
                 if (isCorrect) {
                     this.state.score++;
                     this.playTone(true);
-                    this.markCorrect(card.character);
+                    
+                    // Remove from incorrect history
+                    this.settings.incorrectWords = this.settings.incorrectWords.filter(c => c !== char);
+                    this.saveSettings();
+                    
+                    clickedBtn.classList.add('correct-btn');
                     body.classList.add('flash-green');
+                    
+                    setTimeout(() => {
+                        this.state.currentIndex++;
+                        this.state.isAnimating = false;
+                        this.renderCard();
+                    }, 500);
+
                 } else {
                     this.playTone(false);
-                    this.markIncorrect(card.character);
-                    body.classList.add('flash-red');
-                }
+                    
+                    // Add to incorrect history
+                    if (!this.settings.incorrectWords.includes(char)) {
+                        this.settings.incorrectWords.push(char);
+                        this.saveSettings();
+                    }
+                    
+                    // Highlight selected as wrong, find correct and highlight it
+                    clickedBtn.classList.remove('border-gray-700', 'hover:border-neon', 'hover:text-neon');
+                    clickedBtn.classList.add('border-red-600', 'bg-red-900', 'bg-opacity-40', 'text-gray-400');
+                    
+                    allBtns.forEach(b => {
+                        if (b.dataset.meaning === correctMeaning) {
+                            b.classList.add('correct-btn');
+                        }
+                    });
 
-                // Wait for animation, then next card
-                setTimeout(() => {
-                    this.state.isAnimating = false;
-                    this.state.currentIndex++;
-                    this.renderCard();
-                }, 500);
+                    body.classList.add('flash-red');
+                    
+                    setTimeout(() => {
+                        this.state.currentIndex++;
+                        this.state.isAnimating = false;
+                        this.renderCard();
+                    }, 1500);
+                }
             },
 
             endGame() {
-                const currentHigh = this.getStorage('highscore', 0);
-                if (this.state.score > currentHigh) {
-                    this.setStorage('highscore', this.state.score);
-                }
-                
-                document.getElementById('final-score').innerText = `${this.state.score} / ${this.state.deck.length}`;
-                this.switchView('view-end');
-            },
-
-            showMenu() {
-                this.updateMenuStats();
-                this.switchView('view-menu');
-            },
-
-            switchView(viewId) {
-                document.getElementById('view-menu').classList.add('hidden-view');
-                document.getElementById('view-game').classList.add('hidden-view');
-                document.getElementById('view-end').classList.add('hidden-view');
-                
-                document.getElementById(viewId).classList.remove('hidden-view');
+                document.getElementById('final-score').innerText = this.state.score;
+                document.getElementById('final-total').innerText = this.state.deck.length;
+                this.switchView('view-gameover');
             }
         };
 
-        // Initialize on load
-        window.onload = () => app.init();
+        // Initialize when DOM is ready
+        window.addEventListener('DOMContentLoaded', () => {
+            app.init();
+        });
     </script>
 </body>
 </html>
